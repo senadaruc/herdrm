@@ -13,6 +13,14 @@ the Sparkle update description — a release without a section here fails CI.
   files are uploaded first and the device-side paths are pasted; dropped text
   pastes as text. Previously the pane refused every drop.
 
+### Fixed
+- **Sidebar stats lines no longer freeze on a pane herdr thinks is scrolled
+  up.** Statusline plugins (herdr-agent-quota, grazr-style token scripts)
+  skip every metadata update while herdr's server-side viewport for a pane is
+  above the bottom — a viewport HerdrM never shows or scrolls, since ghostty
+  owns the scrollback. Selecting a pane now snaps that viewport to the bottom,
+  so the model, context and usage lines keep updating.
+
 ## [0.6.7] - 2026-09-20
 
 ### Added
