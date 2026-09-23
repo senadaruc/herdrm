@@ -9,9 +9,9 @@ the Sparkle update description — a release without a section here fails CI.
 
 ### Added
 - **Drag and drop into the terminal.** Dropping files from Finder onto a pane
-  inserts their shell-quoted paths, the way cmux does. On remote devices the
-  files are uploaded first and the device-side paths are pasted; dropped text
-  pastes as text. Previously the pane refused every drop.
+  inserts their shell-quoted paths followed by a space, the way cmux does. On
+  remote devices the files are uploaded first and the device-side paths are
+  pasted; dropped text pastes as text. Previously the pane refused every drop.
 
 ### Fixed
 - **Sidebar stats lines no longer freeze on a pane herdr thinks is scrolled

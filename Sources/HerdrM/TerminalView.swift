@@ -316,6 +316,9 @@ private struct ClipboardFile: Sendable {
 private struct PendingAttachmentPaste: Sendable {
     let files: [ClipboardFile]
     let pathSyntax: AgentAttachmentPathSyntax
+    /// Text appended after the last path — a drop adds a space (cmux-style)
+    /// so the user can keep typing the prompt without inserting one.
+    var suffix: String = ""
 }
 
 private enum ClipboardFileError: LocalizedError {
@@ -723,16 +726,22 @@ final class LineBreakTerminalView: AppTerminalView {
             allImages: fileURLs.allSatisfy(Self.isImageFile)
         )
         if case .local = attachmentDeviceKind {
-            sendPastedText(fileURLs.map { pathSyntax.format($0.path) }.joined(separator: " "))
+            sendPastedText(
+                fileURLs.map { pathSyntax.format($0.path) }.joined(separator: " ") + Self.dropSuffix
+            )
             return
         }
         do {
             let files = try Self.clipboardFiles(from: fileURLs)
-            enqueuePathPaste(files, pathSyntax: pathSyntax)
+            enqueuePathPaste(files, pathSyntax: pathSyntax, suffix: Self.dropSuffix)
         } catch {
             reportAttachmentError(error)
         }
     }
+
+    /// Dropped paths end with a space, like cmux, so the prompt can continue
+    /// straight after them. Clipboard path pastes stay verbatim.
+    private static let dropSuffix = " "
 
     /// Ask the remote program to paste from its own clipboard with a literal
     /// ^V byte — the "native clipboard" delivery path.
@@ -742,14 +751,17 @@ final class LineBreakTerminalView: AppTerminalView {
 
     private func enqueuePathPaste(
         _ files: [ClipboardFile],
-        pathSyntax: AgentAttachmentPathSyntax
+        pathSyntax: AgentAttachmentPathSyntax,
+        suffix: String = ""
     ) {
         guard let attachmentService else {
             discardTemporaries(in: files)
             reportAttachmentError(ClipboardFileError.transferUnavailable)
             return
         }
-        pendingUploads.append(PendingAttachmentPaste(files: files, pathSyntax: pathSyntax))
+        pendingUploads.append(
+            PendingAttachmentPaste(files: files, pathSyntax: pathSyntax, suffix: suffix)
+        )
         guard uploadTask == nil else { return }
         onAttachmentUploadingChanged?(true)
         uploadTask = Task { [weak self] in
@@ -771,7 +783,9 @@ final class LineBreakTerminalView: AppTerminalView {
                     devicePaths.append(try await service.stageAttachment(from: file.localURL))
                 }
                 try Task.checkCancellation()
-                sendPastedText(devicePaths.map(paste.pathSyntax.format).joined(separator: " "))
+                sendPastedText(
+                    devicePaths.map(paste.pathSyntax.format).joined(separator: " ") + paste.suffix
+                )
             } catch is CancellationError {
                 break
             } catch {
