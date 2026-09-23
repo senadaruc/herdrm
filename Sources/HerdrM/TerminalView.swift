@@ -121,9 +121,14 @@ enum GhosttyRuntime {
 
     /// Font settings are hot-applied; surfaces pick the change up without a
     /// rebuild, so this runs from every view update — the controller dedupes.
-    static func applyFontSettings(fontName: String, fontSize: Double, fontWeight: Double, lineSpacing: Double) {
+    static func applyFontSettings(
+        fontName: String, fontSize: Double, fontWeight: Double, lineSpacing: Double, copyOnSelect: Bool
+    ) {
         controller.setTerminalConfiguration(
-            fontConfiguration(fontName: fontName, fontSize: fontSize, fontWeight: fontWeight, lineSpacing: lineSpacing)
+            fontConfiguration(
+                fontName: fontName, fontSize: fontSize, fontWeight: fontWeight,
+                lineSpacing: lineSpacing, copyOnSelect: copyOnSelect
+            )
         )
     }
 
@@ -131,10 +136,15 @@ enum GhosttyRuntime {
         fontName: String,
         fontSize: Double,
         fontWeight: Double,
-        lineSpacing: Double
+        lineSpacing: Double,
+        copyOnSelect: Bool
     ) -> TerminalConfiguration {
         TerminalConfiguration { builder in
             builder.withFontSize(Float(fontSize))
+            // "clipboard" writes the system pasteboard on mouse release, like
+            // herdr's copy_on_select. Plain "true" would target only the
+            // selection clipboard, which libghostty-spm advertises and drops.
+            builder.withCustom("copy-on-select", copyOnSelect ? "clipboard" : "false")
             builder.withCursorStyle(.block)
             builder.withCursorStyleBlink(true)
             // The controller's base config is TerminalConfiguration.default,
@@ -985,6 +995,8 @@ struct AttachTerminalView: NSViewRepresentable {
     /// When false, mouse drags always select text locally even if the TUI
     /// requested mouse reporting (Shift+drag bypasses it either way).
     var mouseReporting: Bool = true
+    /// Copies a local selection to the clipboard on mouse release.
+    var copyOnSelect: Bool = true
     var onAttachmentError: (String) -> Void = { _ in }
     var onAttachmentUploadingChanged: (Bool) -> Void = { _ in }
     /// Called on the main queue when the attach process exits: the pane was taken
@@ -1070,7 +1082,8 @@ struct AttachTerminalView: NSViewRepresentable {
             fontWeight: fontWeight,
             lineSpacing: lineSpacing,
             dark: dark,
-            mouseReporting: mouseReporting
+            mouseReporting: mouseReporting,
+            copyOnSelect: copyOnSelect
         )
     }
 
@@ -1125,13 +1138,15 @@ struct AttachTerminalView: NSViewRepresentable {
 func applyTerminalAppearance(
     _ view: LineBreakTerminalView,
     fontName: String, fontSize: Double, thinStrokes _: Bool,
-    fontWeight: Double, lineSpacing: Double, dark: Bool, mouseReporting: Bool
+    fontWeight: Double, lineSpacing: Double, dark: Bool, mouseReporting: Bool,
+    copyOnSelect: Bool
 ) {
     GhosttyRuntime.applyFontSettings(
         fontName: fontName,
         fontSize: fontSize,
         fontWeight: fontWeight,
-        lineSpacing: lineSpacing
+        lineSpacing: lineSpacing,
+        copyOnSelect: copyOnSelect
     )
     view.mouseReportingEnabled = mouseReporting
     // Colors are theme-only; keep the rest above this early return.
@@ -1222,6 +1237,7 @@ struct ShellTerminalView: NSViewRepresentable {
     var lineSpacing: Double = TerminalDefaults.defaultLineSpacing
     var dark: Bool = false
     var mouseReporting: Bool = true
+    var copyOnSelect: Bool = true
     var onExit: ((Int32?) -> Void)? = nil
     /// Delivers the created view so a focus tracker can observe its window's
     /// first responder without retaining the terminal itself.
@@ -1251,7 +1267,8 @@ struct ShellTerminalView: NSViewRepresentable {
             fontWeight: fontWeight,
             lineSpacing: lineSpacing,
             dark: dark,
-            mouseReporting: mouseReporting
+            mouseReporting: mouseReporting,
+            copyOnSelect: copyOnSelect
         )
 
         let command = HerdrService(device: device, autoStartLocalServer: false)
@@ -1284,7 +1301,8 @@ struct ShellTerminalView: NSViewRepresentable {
             fontWeight: fontWeight,
             lineSpacing: lineSpacing,
             dark: dark,
-            mouseReporting: mouseReporting
+            mouseReporting: mouseReporting,
+            copyOnSelect: copyOnSelect
         )
     }
 

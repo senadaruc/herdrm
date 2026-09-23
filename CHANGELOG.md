@@ -12,6 +12,9 @@ the Sparkle update description — a release without a section here fails CI.
   inserts their shell-quoted paths followed by a space, the way cmux does. On
   remote devices the files are uploaded first and the device-side paths are
   pasted; dropped text pastes as text. Previously the pane refused every drop.
+- **Copy on select.** Text selected with the mouse is copied to the clipboard on
+  release, matching herdr's `copy_on_select`. A new toggle in Settings ›
+  Terminal turns it off.
 
 ### Fixed
 - **Sidebar stats lines no longer freeze on a pane herdr thinks is scrolled

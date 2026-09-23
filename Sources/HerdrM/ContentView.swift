@@ -444,6 +444,7 @@ struct DetailView: View {
     @AppStorage(TerminalDefaults.fontWeightKey) private var terminalFontWeight = TerminalDefaults.defaultFontWeight
     @AppStorage(TerminalDefaults.lineSpacingKey) private var terminalLineSpacing = TerminalDefaults.defaultLineSpacing
     @AppStorage("terminal.mouseReporting") private var terminalMouseReporting = true
+    @AppStorage("terminal.copyOnSelect") private var terminalCopyOnSelect = true
     @Environment(\.colorScheme) private var colorScheme
     /// Per-entry attach state, keyed by `AttachedEntry.id`. `endedAttach` holds the exit
     /// code of a dead attach (nil code = no status, e.g. killed by a signal); a present
@@ -473,6 +474,7 @@ struct DetailView: View {
                     lineSpacing: terminalLineSpacing,
                     dark: colorScheme == .dark,
                     mouseReporting: terminalMouseReporting,
+                    copyOnSelect: terminalCopyOnSelect,
                     onExit: { _ in model.closeShellSession(session.id) }
                 )
                     .id("shell-\(session.id)")
@@ -516,6 +518,7 @@ struct DetailView: View {
                     lineSpacing: terminalLineSpacing,
                     dark: colorScheme == .dark,
                     mouseReporting: terminalMouseReporting,
+                    copyOnSelect: terminalCopyOnSelect,
                     onExit: { _ in model.shellSplitAxis = nil },
                     onViewReady: {
                         splitTracker.shellView = $0
@@ -628,6 +631,7 @@ struct DetailView: View {
                 lineSpacing: terminalLineSpacing,
                 dark: colorScheme == .dark,
                 mouseReporting: terminalMouseReporting,
+                    copyOnSelect: terminalCopyOnSelect,
                 onAttachmentError: { model.actionError = $0 },
                 onAttachmentUploadingChanged: { uploadingAttachment = $0 },
                 onExit: { code in endedAttach[session.id] = code }
